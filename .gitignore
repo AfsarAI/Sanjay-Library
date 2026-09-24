@@ -1,0 +1,51 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+*.env
+
+# JVM & Maven
+target/
+*.class
+.mvn/wrapper/maven-wrapper.jar
+*.jar
+*.war
+hs_err_pid*
+
+# Gradle
+.gradle/
+build/
+
+# Flutter & Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.dart_tool/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/release/
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/flutter_export_environment.sh
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+docker-data/
+postgres-data/
+
+# Logs
+logs/
+*.log
