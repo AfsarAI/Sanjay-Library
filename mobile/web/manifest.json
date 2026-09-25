@@ -1,11 +1,11 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "Sanjay Library",
+    "short_name": "Sanjay Library",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Digital Library Management System for Sanjay Library",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
