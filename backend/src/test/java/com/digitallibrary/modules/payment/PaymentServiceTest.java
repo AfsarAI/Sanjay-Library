@@ -142,4 +142,52 @@ class PaymentServiceTest {
         assertEquals(PaymentStatus.FAILED, payment.getStatus());
         verify(paymentRepository).save(payment);
     }
+
+    @Test
+    @DisplayName("Webhook should reject missing or invalid signature")
+    void webhook_InvalidSignature_ThrowsBadRequest() {
+        assertThrows(BadRequestException.class, () -> 
+            paymentService.processRazorpayWebhook("{}", null));
+        assertThrows(BadRequestException.class, () -> 
+            paymentService.processRazorpayWebhook("{}", "bad_sig"));
+    }
+
+    @Test
+    @DisplayName("Webhook should idempotently process payment.captured event")
+    void webhook_ValidSignature_ProcessesPaymentIdempotently() {
+        String payload = "{\"event\":\"payment.captured\",\"payload\":{\"payment\":{\"entity\":{\"id\":\"pay_test123\",\"order_id\":\"order_test123\"}}}}";
+        String validSig = computeHmac(payload, "rzp_test_webhook_secret");
+
+        Payment payment = new Payment(1L, 100L, 50L, new BigDecimal("700.00"), PaymentMethod.ONLINE_RAZORPAY, PaymentStatus.PENDING);
+        payment.setId(999L);
+        payment.setGatewayOrderId("order_test123");
+
+        when(paymentRepository.findByGatewayOrderId("order_test123")).thenReturn(Optional.of(payment));
+
+        paymentService.processRazorpayWebhook(payload, validSig);
+
+        assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+        assertEquals("pay_test123", payment.getGatewayPaymentId());
+        verify(paymentRepository).save(payment);
+        verify(subscriptionService).advanceSubscriptionCycle(50L);
+
+        // Second duplicate delivery should be idempotent
+        paymentService.processRazorpayWebhook(payload, validSig);
+        verify(subscriptionService, times(1)).advanceSubscriptionCycle(50L);
+    }
+
+    private String computeHmac(String data, String secret) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            mac.init(new javax.crypto.spec.SecretKeySpec(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hash = mac.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

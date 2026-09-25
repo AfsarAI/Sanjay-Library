@@ -26,4 +26,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.libraryId = :libraryId AND p.status = 'SUCCESS' AND p.paymentDate >= :since")
     BigDecimal sumSuccessfulRevenueSince(@Param("libraryId") Long libraryId, @Param("since") Instant since);
+
+    java.util.List<Payment> findByLibraryIdOrderByPaymentDateDesc(Long libraryId);
+
+    java.util.List<Payment> findByLibraryIdAndPaymentDateBetweenOrderByPaymentDateDesc(Long libraryId, Instant startDate, Instant endDate);
 }

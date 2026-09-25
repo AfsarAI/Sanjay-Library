@@ -32,6 +32,7 @@ dependencies:
 
   # Icons
   cupertino_icons: ^1.0.8
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/providers/core_providers.dart';
 import '../../core/utils/formatters.dart';
 import '../authentication/auth_provider.dart';
 import '../seats/seat_provider.dart';
@@ -212,6 +213,156 @@ class AdminDashboardScreen extends ConsumerWidget {
                       ),
                       onPressed: () => context.push('/student/seats'),
                       child: const Text('Open Map'),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              const Text(
+                'Owner Command Center',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+
+              // Reception Kiosk Mode Tile
+              Card(
+                color: AppColors.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.accent.withOpacity(0.15),
+                    child: const Icon(Icons.qr_code_2_rounded, color: AppColors.accent),
+                  ),
+                  title: const Text('Reception Kiosk Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Display 30s rotating QR code on tablet for entrance check-in', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textSecondary),
+                  onTap: () => context.push('/admin/kiosk'),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Student Directory Tile
+              Card(
+                color: AppColors.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary.withOpacity(0.15),
+                    child: const Icon(Icons.people_alt_rounded, color: AppColors.primary),
+                  ),
+                  title: const Text('Student Directory & Status', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Search admissions, assigned seats, record cash payments', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textSecondary),
+                  onTap: () => context.push('/admin/students'),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Policy & Billing Settings Tile
+              Card(
+                color: AppColors.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppColors.border),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.warning.withOpacity(0.15),
+                    child: const Icon(Icons.settings_suggest_rounded, color: AppColors.warning),
+                  ),
+                  title: const Text('Policy & Billing Rules', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Adjust monthly fee, grace period, seat release days', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textSecondary),
+                  onTap: () => context.push('/admin/settings'),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Reports & Export
+              const Text(
+                'Reports & Export',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.file_download_outlined, color: AppColors.success, size: 24),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Attendance Register (CSV)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text('Export complete 30-day student entry/exit records', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        OutlinedButton(
+                          onPressed: () {
+                            final url = ref.read(adminServiceProvider).getAttendanceReportCsvUrl();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Attendance CSV report available at:\n$url'),
+                                action: SnackBarAction(
+                                  label: 'OK',
+                                  onPressed: () {},
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('Export'),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Row(
+                      children: [
+                        const Icon(Icons.receipt_long_rounded, color: AppColors.accent, size: 24),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Monthly Revenue Ledger (CSV)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text('Export all online & cash fee collections', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        OutlinedButton(
+                          onPressed: () {
+                            final url = ref.read(adminServiceProvider).getRevenueReportCsvUrl();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Revenue CSV report available at:\n$url'),
+                                action: SnackBarAction(
+                                  label: 'OK',
+                                  onPressed: () {},
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('Export'),
+                        ),
+                      ],
                     ),
                   ],
                 ),

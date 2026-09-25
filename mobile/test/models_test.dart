@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/models/admin_dashboard_model.dart';
+import 'package:mobile/models/admin_student_model.dart';
 import 'package:mobile/models/attendance_model.dart';
+import 'package:mobile/models/library_settings_model.dart';
 import 'package:mobile/models/payment_model.dart';
 import 'package:mobile/models/seat_model.dart';
 import 'package:mobile/models/subscription_model.dart';
@@ -169,6 +171,47 @@ void main() {
       expect(metrics.occupiedSeats, 42);
       expect(metrics.currentlyInsideCount, 24);
       expect(metrics.monthlyRevenue, 29400.0);
+    });
+
+    test('AdminStudentModel parses student directory attributes and status', () {
+      final student = AdminStudentModel.fromJson({
+        'studentId': 5,
+        'fullName': 'Mohammad Afsar',
+        'phoneNumber': '9123456780',
+        'seatNumber': 'A25',
+        'seatId': 25,
+        'accountStatus': 'ACTIVE',
+        'subscriptionStatus': 'ATTENDANCE_BLOCKED',
+        'dueDate': '2026-09-10',
+        'graceUntil': '2026-09-17',
+        'joinedAt': '2026-08-10T10:00:00Z',
+      });
+
+      expect(student.studentId, 5);
+      expect(student.fullName, 'Mohammad Afsar');
+      expect(student.seatNumber, 'A25');
+      expect(student.isBlocked, isTrue);
+      expect(student.isSuspended, isFalse);
+    });
+
+    test('LibrarySettingsModel parses and serializes configuration', () {
+      final settings = LibrarySettingsModel.fromJson({
+        'libraryId': 1,
+        'monthlyFeeAmount': 750.0,
+        'gracePeriodDays': 5,
+        'attendanceBlockAfterDays': 6,
+        'seatReleaseAfterDays': 14,
+        'reservationTimeoutMinutes': 15,
+        'allowQrAttendance': true,
+      });
+
+      expect(settings.monthlyFeeAmount, 750.0);
+      expect(settings.gracePeriodDays, 5);
+      expect(settings.seatReleaseAfterDays, 14);
+
+      final json = settings.toJson();
+      expect(json['monthlyFeeAmount'], 750.0);
+      expect(json['gracePeriodDays'], 5);
     });
   });
 }

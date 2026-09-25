@@ -179,4 +179,20 @@ class AttendanceServiceTest {
         assertNotNull(dto.getCheckOutTime());
         assertTrue(dto.getDurationMinutes() >= 179);
     }
+
+    @Test
+    @DisplayName("Should successfully auto-checkout open records during nightly job")
+    void autoCheckoutPendingRecords_Success() {
+        AttendanceRecord openRecord = new AttendanceRecord(1L, 100L, 25L, LocalDate.now(), Instant.now().minus(4, ChronoUnit.HOURS), AttendanceVerificationMethod.QR_ROTATING);
+        when(attendanceRepository.findByDateLessThanEqualAndCheckOutTimeIsNull(any(LocalDate.class)))
+                .thenReturn(java.util.List.of(openRecord));
+
+        int processed = attendanceService.autoCheckoutPendingRecords();
+
+        assertEquals(1, processed);
+        assertEquals(AttendanceStatus.INCOMPLETE, openRecord.getStatus());
+        assertNotNull(openRecord.getCheckOutTime());
+        assertTrue(openRecord.getDurationMinutes() >= 239);
+        verify(attendanceRepository).save(openRecord);
+    }
 }

@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/payments")
 @Tag(name = "Payments", description = "Endpoints for online Razorpay payments, signature verification, and cash ledger")
@@ -23,6 +25,15 @@ public class PaymentController {
 
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
+    }
+
+    @PostMapping("/webhook")
+    @Operation(summary = "Razorpay server-to-server webhook", description = "Asynchronous payment status notifications with raw signature HMAC verification")
+    public ResponseEntity<Map<String, String>> handleWebhook(
+            @RequestBody String rawPayload,
+            @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature) {
+        paymentService.processRazorpayWebhook(rawPayload, signature);
+        return ResponseEntity.ok(Map.of("status", "ok"));
     }
 
     @PostMapping("/create-order")

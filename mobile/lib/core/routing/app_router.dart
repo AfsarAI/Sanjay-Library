@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/admin/admin_dashboard_screen.dart';
+import '../../features/admin/admin_settings_screen.dart';
+import '../../features/admin/reception_kiosk_screen.dart';
+import '../../features/admin/student_directory_screen.dart';
 import '../../features/admission/admission_screen.dart';
 import '../../features/attendance/attendance_screen.dart';
 import '../../features/attendance/qr_scanner_screen.dart';
@@ -75,6 +78,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/dashboard',
         builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/admin/kiosk',
+        builder: (context, state) => const ReceptionKioskScreen(),
+      ),
+      GoRoute(
+        path: '/admin/students',
+        builder: (context, state) => const StudentDirectoryScreen(),
+      ),
+      GoRoute(
+        path: '/admin/settings',
+        builder: (context, state) => const AdminSettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

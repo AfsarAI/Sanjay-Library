@@ -5,6 +5,7 @@ import com.digitallibrary.core.errors.ConflictException;
 import com.digitallibrary.core.errors.ResourceNotFoundException;
 import com.digitallibrary.modules.admin.dto.ActionItemDto;
 import com.digitallibrary.modules.admin.dto.AdminDashboardDto;
+import com.digitallibrary.modules.admin.dto.AdminStudentDirectoryDto;
 import com.digitallibrary.modules.admission.Admission;
 import com.digitallibrary.modules.admission.AdmissionRepository;
 import com.digitallibrary.modules.admission.AdmissionStatus;
@@ -252,5 +253,61 @@ public class AdminService {
 
     private String getSeatNumber(Long seatId) {
         return seatRepository.findById(seatId).map(Seat::getSeatNumber).orElse("Unknown");
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminStudentDirectoryDto> getStudentDirectory(Long libraryId, String query, String filterStatus) {
+        List<User> students = userRepository.findAll().stream()
+                .filter(u -> libraryId.equals(u.getLibraryId()) && u.getRole() == com.digitallibrary.modules.user.UserRole.ROLE_STUDENT)
+                .toList();
+
+        List<AdminStudentDirectoryDto> list = new ArrayList<>();
+        for (User u : students) {
+            if (query != null && !query.isBlank()) {
+                String q = query.toLowerCase().trim();
+                boolean matchesName = u.getFullName() != null && u.getFullName().toLowerCase().contains(q);
+                boolean matchesPhone = u.getPhoneNumber() != null && u.getPhoneNumber().contains(q);
+                if (!matchesName && !matchesPhone) {
+                    continue;
+                }
+            }
+
+            Admission admission = admissionRepository.findTopByStudentIdAndStatus(u.getId(), AdmissionStatus.ACTIVE).orElse(null);
+            String seatNumber = "None";
+            Long seatId = null;
+            if (admission != null) {
+                seatId = admission.getSeatId();
+                seatNumber = getSeatNumber(admission.getSeatId());
+            }
+
+            Subscription subscription = subscriptionRepository.findTopByStudentIdOrderByCreatedAtDesc(u.getId()).orElse(null);
+            SubscriptionStatus subStatus = subscription != null ? subscription.getStatus() : null;
+            LocalDate dueDate = subscription != null ? subscription.getDueDate() : null;
+            LocalDate graceUntil = subscription != null ? subscription.getGraceUntil() : null;
+
+            if (filterStatus != null && !filterStatus.isBlank() && !"ALL".equalsIgnoreCase(filterStatus)) {
+                if ("SUSPENDED".equalsIgnoreCase(filterStatus)) {
+                    if (u.getStatus() != UserStatus.SUSPENDED) continue;
+                } else if (subStatus == null || !subStatus.name().equalsIgnoreCase(filterStatus)) {
+                    continue;
+                }
+            }
+
+            list.add(new AdminStudentDirectoryDto(
+                    u.getId(),
+                    u.getFullName(),
+                    u.getPhoneNumber(),
+                    u.getEmail(),
+                    seatNumber,
+                    seatId,
+                    u.getStatus(),
+                    subStatus,
+                    dueDate,
+                    graceUntil,
+                    u.getCreatedAt()
+            ));
+        }
+
+        return list;
     }
 }

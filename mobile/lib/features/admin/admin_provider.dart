@@ -2,12 +2,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../core/providers/core_providers.dart';
 import '../../models/admin_dashboard_model.dart';
+import '../../models/admin_student_model.dart';
+import '../../models/library_settings_model.dart';
 import '../seats/seat_provider.dart';
 
 final adminDashboardProvider =
     FutureProvider.autoDispose<AdminDashboardModel>((ref) async {
   final service = ref.watch(adminServiceProvider);
   return await service.getDashboard();
+});
+
+final studentDirectoryProvider = FutureProvider.autoDispose
+    .family<List<AdminStudentModel>, ({String? query, String? status})>((ref, filter) async {
+  final service = ref.watch(adminServiceProvider);
+  return await service.getStudents(
+    query: filter.query,
+    status: filter.status,
+  );
+});
+
+final librarySettingsProvider =
+    FutureProvider.autoDispose<LibrarySettingsModel>((ref) async {
+  final service = ref.watch(adminServiceProvider);
+  return await service.getSettings();
+});
+
+final receptionQrTokenProvider =
+    FutureProvider.autoDispose<String>((ref) async {
+  final service = ref.watch(attendanceServiceProvider);
+  return await service.getRotatingQrToken();
 });
 
 final adminActionProvider =

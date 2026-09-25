@@ -46,6 +46,8 @@ mobile/ios/Flutter/flutter_export_environment.sh
 docker-data/
 postgres-data/
 
-# Logs
+# Logs & Backups
 logs/
 *.log
+backups/
+*.sql.gz

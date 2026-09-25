@@ -24,4 +24,8 @@ public interface AttendanceRepository extends JpaRepository<AttendanceRecord, Lo
     long countCurrentlyInside(@Param("libraryId") Long libraryId, @Param("date") LocalDate date);
 
     long countByLibraryIdAndDate(Long libraryId, LocalDate date);
+
+    List<AttendanceRecord> findByDateLessThanEqualAndCheckOutTimeIsNull(LocalDate date);
+
+    List<AttendanceRecord> findByLibraryIdAndDateBetweenOrderByDateDesc(Long libraryId, LocalDate startDate, LocalDate endDate);
 }

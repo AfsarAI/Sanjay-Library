@@ -214,4 +214,44 @@ public class AttendanceService {
                 libraryId, today, totalAdmitted, checkedInToday, currentlyInside, checkedOut, absent, recordDtos
         );
     }
+
+    @Transactional
+    public int autoCheckoutPendingRecords() {
+        LocalDate today = LocalDate.now();
+        List<AttendanceRecord> openRecords = attendanceRepository.findByDateLessThanEqualAndCheckOutTimeIsNull(today);
+        int count = 0;
+        Instant closingTime = Instant.now();
+
+        for (AttendanceRecord record : openRecords) {
+            record.setCheckOutTime(closingTime);
+            record.setStatus(AttendanceStatus.INCOMPLETE);
+            long minutes = ChronoUnit.MINUTES.between(record.getCheckInTime(), closingTime);
+            record.setDurationMinutes((int) Math.max(0, minutes));
+            String autoNote = "Nightly auto-checkout at closing time";
+            record.setNotes(record.getNotes() != null && !record.getNotes().isBlank()
+                    ? record.getNotes() + " | " + autoNote
+                    : autoNote);
+            attendanceRepository.save(record);
+            count++;
+        }
+
+        log.info("Nightly auto-checkout job processed {} unclosed attendance records.", count);
+        return count;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceRecordDto> getAttendanceForReport(Long libraryId, LocalDate startDate, LocalDate endDate) {
+        return attendanceRepository.findByLibraryIdAndDateBetweenOrderByDateDesc(libraryId, startDate, endDate)
+                .stream()
+                .map(r -> {
+                    User u = userRepository.findById(r.getStudentId()).orElse(null);
+                    Seat s = seatRepository.findById(r.getSeatId()).orElse(null);
+                    return AttendanceRecordDto.fromEntity(
+                            r,
+                            u != null ? u.getFullName() : "",
+                            s != null ? s.getSeatNumber() : ""
+                    );
+                })
+                .toList();
+    }
 }

@@ -9,6 +9,8 @@ import com.digitallibrary.modules.payment.dto.*;
 import com.digitallibrary.modules.subscription.Subscription;
 import com.digitallibrary.modules.subscription.SubscriptionRepository;
 import com.digitallibrary.modules.subscription.SubscriptionService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -161,6 +164,70 @@ public class PaymentService {
 
         log.info("Admin {} recorded cash payment of ₹{} for student {}", adminPhone, request.getAmount(), request.getStudentId());
         return PaymentDto.fromEntity(payment);
+    }
+
+    @Transactional
+    public void processRazorpayWebhook(String rawPayload, String signature) {
+        if (signature == null || signature.isBlank()) {
+            throw new BadRequestException("Missing X-Razorpay-Signature header", "WEBHOOK_SIGNATURE_MISSING");
+        }
+
+        boolean isValid = verifyHmacSha256(rawPayload, signature, razorpayWebhookSecret);
+        if (!isValid) {
+            log.warn("Invalid Razorpay webhook signature received");
+            throw new BadRequestException("Invalid webhook signature", "WEBHOOK_SIGNATURE_INVALID");
+        }
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(rawPayload);
+            String event = root.path("event").asText();
+            JsonNode paymentEntity = root.path("payload").path("payment").path("entity");
+            String orderId = paymentEntity.path("order_id").asText();
+            String paymentId = paymentEntity.path("id").asText();
+
+            log.info("Processing Razorpay webhook event: {} for order: {}", event, orderId);
+
+            if (orderId == null || orderId.isBlank()) {
+                return;
+            }
+
+            Optional<Payment> paymentOpt = paymentRepository.findByGatewayOrderId(orderId);
+            if (paymentOpt.isEmpty()) {
+                log.warn("Webhook received for unknown orderId: {}", orderId);
+                return;
+            }
+
+            Payment payment = paymentOpt.get();
+
+            if ("payment.captured".equals(event) || "order.paid".equals(event)) {
+                if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                    log.info("Webhook duplicate: payment {} already marked SUCCESS", payment.getId());
+                    return;
+                }
+
+                payment.setStatus(PaymentStatus.SUCCESS);
+                payment.setGatewayPaymentId(paymentId);
+                payment.setPaymentDate(Instant.now());
+                paymentRepository.save(payment);
+
+                if (payment.getSubscriptionId() != null) {
+                    subscriptionService.advanceSubscriptionCycle(payment.getSubscriptionId());
+                }
+
+                log.info("Webhook successfully processed payment {} for student {}", payment.getId(), payment.getStudentId());
+            } else if ("payment.failed".equals(event)) {
+                payment.setStatus(PaymentStatus.FAILED);
+                payment.setGatewayPaymentId(paymentId);
+                paymentRepository.save(payment);
+                log.info("Webhook marked payment {} as FAILED", payment.getId());
+            }
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to parse or process Razorpay webhook payload", e);
+            throw new BadRequestException("Error processing webhook payload: " + e.getMessage(), "WEBHOOK_PROCESSING_FAILED");
+        }
     }
 
     @Transactional(readOnly = true)
